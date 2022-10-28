@@ -47,6 +47,7 @@ def convert_multi(api: HfApi, model_id) -> CommitInfo:
             repo_id=model_id,
             operations=operations,
             commit_message="Adding `safetensors` variant of this model",
+            commit_description="Converted from this Space: https://huggingface.co/spaces/safetensors/convert",
             create_pr=True,
         )
     finally:
@@ -66,6 +67,7 @@ def convert_single(api: HfApi, model_id) -> CommitInfo:
             repo_id=model_id,
             operations=operations,
             commit_message="Adding `safetensors` variant of this model",
+            commit_description="Converted from this Space: https://huggingface.co/spaces/safetensors/convert",
             create_pr=True,
         )
     finally:
