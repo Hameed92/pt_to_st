@@ -1,12 +1,12 @@
 ---
 title: Convert
-emoji: 🚀
+emoji: 🐶
 colorFrom: yellow
-colorTo: indigo
+colorTo: orange
 sdk: gradio
 sdk_version: 3.7
 app_file: app.py
-pinned: false
+pinned: true
 license: apache-2.0
 ---
 
