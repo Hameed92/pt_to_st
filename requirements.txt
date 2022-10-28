@@ -1,2 +1,3 @@
 git+https://github.com/huggingface/huggingface_hub@main
 safetensors
+torch
