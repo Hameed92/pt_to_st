@@ -4,7 +4,7 @@ import os
 
 import torch
 
-from huggingface_hub import CommitOperationAdd, HfApi, hf_hub_download
+from huggingface_hub import CommitOperationAdd, HfApi, hf_hub_download, CommitInfo
 from safetensors.torch import save_file
 
 
@@ -14,7 +14,7 @@ def rename(pt_filename) -> str:
     return local
 
 
-def convert_multi(model_id) -> str:
+def convert_multi(api: HfApi, model_id) -> CommitInfo:
     local_filenames = []
     try:
         filename = hf_hub_download(
@@ -39,7 +39,6 @@ def convert_multi(model_id) -> str:
             json.dump(newdata, f)
         local_filenames.append(index)
 
-        api = HfApi()
         operations = [
             CommitOperationAdd(path_in_repo=local, path_or_fileobj=local)
             for local in local_filenames
@@ -55,26 +54,25 @@ def convert_multi(model_id) -> str:
             os.remove(local)
 
 
-def convert_single(model_id) -> str:
+def convert_single(api: HfApi, model_id) -> CommitInfo:
     local = "model.safetensors"
     try:
         filename = hf_hub_download(repo_id=model_id, filename="pytorch_model.bin")
         loaded = torch.load(filename)
         save_file(loaded, local, metadata={"format": "pt"})
 
-        api = HfApi()
-
-        return api.upload_file(
-            path_or_fileobj=local,
-            create_pr=True,
-            path_in_repo=local,
+        operations = [CommitOperationAdd(path_in_repo=local, path_or_fileobj=local)]
+        return api.create_commit(
             repo_id=model_id,
+            operations=operations,
+            commit_message="Adding `safetensors` variant of this model",
+            create_pr=True,
         )
     finally:
         os.remove(local)
 
 
-def convert(token: str, model_id: str) -> str:
+def convert(token: str, model_id: str) -> CommitInfo:
     """
     returns url to the PR
     """
@@ -82,9 +80,9 @@ def convert(token: str, model_id: str) -> str:
     info = api.model_info(model_id)
     filenames = set(s.rfilename for s in info.siblings)
     if "pytorch_model.bin" in filenames:
-        return convert_single(model_id)
+        return convert_single(api, model_id)
     elif "pytorch_model.bin.index.json" in filenames:
-        return convert_multi(model_id)
+        return convert_multi(api, model_id)
     raise ValueError("repo does not seem to have a pytorch_model in it")
 
 

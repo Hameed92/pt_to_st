@@ -11,13 +11,15 @@ def run(token: str, model_id: str) -> str:
         Please fill a token and model_id.
         """
     try:
-        pr_url = convert(token=token, model_id=model_id)
+        # TODO(Run this in a separate directory otherwise max_concurrency = 1...)
+        # as filename of conversion is fixed.
+        commit_info = convert(token=token, model_id=model_id)
         return f"""
         ### Success 🔥
 
         Yay! This model was successfully converted and a PR was open using your token, here:
 
-        {pr_url}
+        [{commit_info.pr_url}]({commit_info.pr_url})
         """
     except Exception as e:
         return f"""
