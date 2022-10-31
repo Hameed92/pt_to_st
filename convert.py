@@ -7,9 +7,9 @@ import torch
 
 from huggingface_hub import CommitOperationAdd, HfApi, hf_hub_download
 from huggingface_hub.file_download import repo_folder_name
+from safetensors.torch import save_file
 from transformers import AutoConfig
 from transformers.pipelines.base import infer_framework_load_model
-from safetensors.torch import save_file
 
 
 def check_file_size(sf_filename, pt_filename):
@@ -17,10 +17,12 @@ def check_file_size(sf_filename, pt_filename):
     pt_size = os.stat(pt_filename).st_size
 
     if (sf_size - pt_size) / pt_size > 0.01:
-        raise RuntimeError(f"""The file size different is more than 1%:
+        raise RuntimeError(
+            f"""The file size different is more than 1%:
          - {sf_filename}: {sf_size}
          - {pt_filename}: {pt_size}
-         """)
+         """
+        )
 
 
 def rename(pt_filename) -> str:
@@ -29,12 +31,13 @@ def rename(pt_filename) -> str:
     return local
 
 
-def convert_multi(model_id):
+def convert_multi(model_id, folder):
     filename = hf_hub_download(repo_id=model_id, filename="pytorch_model.bin.index.json")
     with open(filename, "r") as f:
         data = json.load(f)
 
     filenames = set(data["weight_map"].values())
+    local_filenames = []
     for filename in filenames:
         cached_filename = hf_hub_download(repo_id=model_id, filename=filename)
         loaded = torch.load(cached_filename)
@@ -53,7 +56,9 @@ def convert_multi(model_id):
         json.dump(newdata, f)
     local_filenames.append(index)
 
-    operations = [CommitOperationAdd(path_in_repo=local.split("/")[-1], path_or_fileobj=local) for local in local_filenames]
+    operations = [
+        CommitOperationAdd(path_in_repo=local.split("/")[-1], path_or_fileobj=local) for local in local_filenames
+    ]
 
     return operations
 
@@ -70,6 +75,7 @@ def convert_single(model_id, folder):
 
     operations = [CommitOperationAdd(path_in_repo=sf_filename, path_or_fileobj=local)]
     return operations
+
 
 def check_final_model(model_id, folder):
     config = hf_hub_download(repo_id=model_id, filename="config.json")
@@ -91,6 +97,7 @@ def convert(api, model_id):
 
     folder = repo_folder_name(repo_id=model_id, repo_type="models")
     os.makedirs(folder)
+    new_pr = None
     try:
         operations = None
         if "model.safetensors" in filenames or "model_index.safetensors.index.json" in filenames:
@@ -104,7 +111,7 @@ def convert(api, model_id):
 
         if operations:
             check_final_model(model_id, folder)
-            api.create_commit(
+            new_pr = api.create_commit(
                 repo_id=model_id,
                 operations=operations,
                 commit_message="Adding `safetensors` variant of this model",
@@ -112,7 +119,7 @@ def convert(api, model_id):
             )
     finally:
         shutil.rmtree(folder)
-    return 1
+    return new_pr
 
 
 if __name__ == "__main__":
