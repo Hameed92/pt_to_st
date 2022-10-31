@@ -31,18 +31,21 @@ def run(token: str, model_id: str) -> str:
         commit_info = convert(api=api, model_id=model_id)
 
         # save in a private dataset:
-        repo.git_pull(rebase=True)
-        with open(DATA_FILE, "a") as csvfile:
-            writer = csv.DictWriter(csvfile, fieldnames=["model_id", "pr_url", "time"])
-            writer.writerow(
-                {
-                    "model_id": model_id,
-                    "pr_url": commit_info.pr_url,
-                    "time": str(datetime.now()),
-                }
-            )
-        commit_url = repo.push_to_hub()
-        print("[dataset]", commit_url)
+        if repo is not None:
+            repo.git_pull(rebase=True)
+            with open(DATA_FILE, "a") as csvfile:
+                writer = csv.DictWriter(
+                    csvfile, fieldnames=["model_id", "pr_url", "time"]
+                )
+                writer.writerow(
+                    {
+                        "model_id": model_id,
+                        "pr_url": commit_info.pr_url,
+                        "time": str(datetime.now()),
+                    }
+                )
+            commit_url = repo.push_to_hub()
+            print("[dataset]", commit_url)
 
         return f"""
         ### Success 🔥
