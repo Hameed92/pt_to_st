@@ -1,7 +1,22 @@
+import csv
+import datetime
+import os
+from typing import Optional
 import gradio as gr
 
 from convert import convert
-from huggingface_hub import HfApi
+from huggingface_hub import HfApi, Repository
+
+
+DATASET_REPO_URL = "https://huggingface.co/datasets/safetensors/conversions"
+DATA_FILENAME = "data.csv"
+DATA_FILE = os.path.join("data", DATA_FILENAME)
+
+HF_TOKEN = os.environ.get("HF_TOKEN")
+
+repo: Optional[Repository] = None
+if HF_TOKEN:
+    repo = Repository(local_dir="data", clone_from=DATASET_REPO_URL, token=HF_TOKEN)
 
 
 def run(token: str, model_id: str) -> str:
@@ -14,6 +29,21 @@ def run(token: str, model_id: str) -> str:
     try:
         api = HfApi(token=token)
         commit_info = convert(api=api, model_id=model_id)
+
+        # save in a private dataset:
+        repo.git_pull(rebase=True)
+        with open(DATA_FILE, "a") as csvfile:
+            writer = csv.DictWriter(csvfile, fieldnames=["model_id", "pr_url", "time"])
+            writer.writerow(
+                {
+                    "model_id": model_id,
+                    "pr_url": commit_info.pr_url,
+                    "time": str(datetime.now()),
+                }
+            )
+        commit_url = repo.push_to_hub()
+        print("[dataset]", commit_url)
+
         return f"""
         ### Success 🔥
 
