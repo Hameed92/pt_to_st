@@ -29,6 +29,7 @@ def run(token: str, model_id: str) -> str:
     try:
         api = HfApi(token=token)
         commit_info = convert(api=api, model_id=model_id)
+        print("[commit_info]", commit_info)
 
         # save in a private dataset:
         if repo is not None:
