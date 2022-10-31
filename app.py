@@ -12,8 +12,6 @@ def run(token: str, model_id: str) -> str:
         Please fill a token and model_id.
         """
     try:
-        # TODO(Run this in a separate directory otherwise max_concurrency = 1...)
-        # as filename of conversion is fixed.
         api = HfApi(token=token)
         commit_info = convert(api=api, model_id=model_id)
         return f"""
