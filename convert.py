@@ -101,7 +101,7 @@ def convert(api, model_id):
     try:
         operations = None
         if "model.safetensors" in filenames or "model_index.safetensors.index.json" in filenames:
-            print(f"Model {model_id} is already converted, skipping..")
+            raise RuntimeError(f"Model {model_id} is already converted, skipping..")
         elif "pytorch_model.bin" in filenames:
             operations = convert_single(model_id, folder)
         elif "pytorch_model.bin.index.json" in filenames:
