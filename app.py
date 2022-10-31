@@ -1,6 +1,7 @@
 import gradio as gr
 
 from convert import convert
+from huggingface_hub import HfApi
 
 
 def run(token: str, model_id: str) -> str:
@@ -13,7 +14,8 @@ def run(token: str, model_id: str) -> str:
     try:
         # TODO(Run this in a separate directory otherwise max_concurrency = 1...)
         # as filename of conversion is fixed.
-        commit_info = convert(token=token, model_id=model_id)
+        api = HfApi(token=token)
+        commit_info = convert(api=api, model_id=model_id)
         return f"""
         ### Success 🔥
 
