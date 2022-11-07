@@ -28,11 +28,13 @@ def run(token: str, model_id: str) -> str:
         """
     try:
         api = HfApi(token=token)
+        is_private = api.model_info(model_id=model_id).private
+
         commit_info = convert(api=api, model_id=model_id)
         print("[commit_info]", commit_info)
 
-        # save in a private dataset:
-        if repo is not None:
+        # save in a (public) dataset:
+        if repo is not None and not is_private:
             repo.git_pull(rebase=True)
             with open(DATA_FILE, "a") as csvfile:
                 writer = csv.DictWriter(
