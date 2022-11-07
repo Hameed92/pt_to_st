@@ -1,5 +1,5 @@
 import csv
-import datetime
+from datetime import datetime
 import os
 from typing import Optional
 import gradio as gr
@@ -28,7 +28,8 @@ def run(token: str, model_id: str) -> str:
         """
     try:
         api = HfApi(token=token)
-        is_private = api.model_info(model_id=model_id).private
+        is_private = api.model_info(repo_id=model_id).private
+        print("is_private", is_private)
 
         commit_info = convert(api=api, model_id=model_id)
         print("[commit_info]", commit_info)
@@ -36,6 +37,7 @@ def run(token: str, model_id: str) -> str:
         # save in a (public) dataset:
         if repo is not None and not is_private:
             repo.git_pull(rebase=True)
+            print("pulled")
             with open(DATA_FILE, "a") as csvfile:
                 writer = csv.DictWriter(
                     csvfile, fieldnames=["model_id", "pr_url", "time"]
