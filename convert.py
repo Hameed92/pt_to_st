@@ -47,7 +47,7 @@ def rename(pt_filename: str) -> str:
     return local
 
 
-def convert_multi(model_id: str) -> List["CommitOperationAdd"]:
+def convert_multi(model_id: str, folder: str) -> List["CommitOperationAdd"]:
     filename = hf_hub_download(repo_id=model_id, filename="pytorch_model.bin.index.json")
     with open(filename, "r") as f:
         data = json.load(f)
