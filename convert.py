@@ -95,7 +95,7 @@ def convert_file(
     pt_filename: str,
     sf_filename: str,
 ):
-    loaded = torch.load(pt_filename)
+    loaded = torch.load(pt_filename, map_location="cpu")
     shared = shared_pointers(loaded)
     for shared_weights in shared:
         for name in shared_weights[1:]:
