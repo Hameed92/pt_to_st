@@ -95,7 +95,9 @@ def convert_file(
     pt_filename: str,
     sf_filename: str,
 ):
-    loaded = torch.load(pt_filename, map_location="cpu")
+    loaded = torch.load(pt_filename)
+    if "state_dict" in loaded:
+        loaded = loaded["state_dict"]
     shared = shared_pointers(loaded)
     for shared_weights in shared:
         for name in shared_weights[1:]:
@@ -238,7 +240,7 @@ def convert(api: "HfApi", model_id: str, force: bool = False) -> Optional["Commi
                     operations = convert_multi(model_id, folder)
                 else:
                     raise RuntimeError(f"Model {model_id} doesn't seem to be a valid pytorch model. Cannot convert")
-                # check_final_model(model_id, folder)
+                check_final_model(model_id, folder)
             else:
                 operations = convert_generic(model_id, folder, filenames)
 
