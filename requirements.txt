@@ -2,3 +2,4 @@ git+https://github.com/huggingface/huggingface_hub@main
 safetensors
 torch==1.12.0
 transformers
+pytorch_lightning
