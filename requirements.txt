@@ -1,6 +1,6 @@
 huggingface_hub
 setuptools_rust
-git+https://github.com/huggingface/safetensors@forcing_alignment#egg=safetensors&subdirectory=bindings/python
+safetensors
 torch==1.13.1
 transformers
 pytorch_lightning
