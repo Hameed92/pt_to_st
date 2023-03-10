@@ -1,6 +1,6 @@
 huggingface_hub
 setuptools_rust
-safetensors
+safetensors>=0.3
 torch==1.13.1
 transformers
 pytorch_lightning
