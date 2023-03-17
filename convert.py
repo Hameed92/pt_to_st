@@ -20,7 +20,7 @@ COMMIT_DESCRIPTION = """
 This is an automated PR create with https://huggingface.co/spaces/safetensors/convert
 
 This new file is equivalent to `pytorch_model.bin` but safe in the sense that
-no arbitrary code can be put into it. 
+no arbitrary code can be put into it.
 
 These files also happen to load much faster than their pytorch counterpart:
 https://colab.research.google.com/github/huggingface/notebooks/blob/main/safetensors_doc/en/speed.ipynb
@@ -269,7 +269,7 @@ def convert(api: "HfApi", model_id: str, force: bool = False) -> Optional["Commi
                     repo_id=model_id,
                     operations=operations,
                     commit_message=pr_title,
-                    commit_description=COMMIT_DESCRIPTION
+                    commit_description=COMMIT_DESCRIPTION,
                     create_pr=True,
                 )
                 print(f"Pr created at {new_pr.pr_url}")
