@@ -35,7 +35,8 @@ def run(token: str, model_id: str) -> str:
         print("[commit_info]", commit_info)
 
         # save in a (public) dataset:
-        if repo is not None and not is_private:
+        # TODO False because of LFS bug.
+        if False and repo is not None and not is_private:
             repo.git_pull(rebase=True)
             print("pulled")
             with open(DATA_FILE, "a") as csvfile:
