@@ -15,7 +15,8 @@ DATA_FILE = os.path.join("data", DATA_FILENAME)
 HF_TOKEN = os.environ.get("HF_TOKEN")
 
 repo: Optional[Repository] = None
-if HF_TOKEN:
+# TODO
+if False and HF_TOKEN:
     repo = Repository(local_dir="data", clone_from=DATASET_REPO_URL, token=HF_TOKEN)
 
 
