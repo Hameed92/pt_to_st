@@ -93,4 +93,4 @@ demo = gr.Interface(
     fn=run,
 ).queue()
 
-demo.launch(show_api=True)
+demo.launch(show_api=True, max_size=10)
