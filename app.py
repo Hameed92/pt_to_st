@@ -91,6 +91,6 @@ demo = gr.Interface(
     ],
     outputs=[gr.Markdown(label="output")],
     fn=run,
-).queue(max_size=10)
+).queue(max_size=10, concurrency_count=3)
 
 demo.launch(show_api=True)
