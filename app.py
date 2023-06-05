@@ -32,7 +32,7 @@ def run(token: str, model_id: str) -> str:
         is_private = api.model_info(repo_id=model_id).private
         print("is_private", is_private)
 
-        commit_info = convert(api=api, model_id=model_id)
+        commit_info, errors = convert(api=api, model_id=model_id)
         print("[commit_info]", commit_info)
 
         # save in a (public) dataset:
@@ -54,13 +54,17 @@ def run(token: str, model_id: str) -> str:
             commit_url = repo.push_to_hub()
             print("[dataset]", commit_url)
 
-        return f"""
+        string =  f"""
         ### Success 🔥
 
         Yay! This model was successfully converted and a PR was open using your token, here:
 
         [{commit_info.pr_url}]({commit_info.pr_url})
         """
+        if errors:
+            string += "\nErrors during conversion:\n"
+            string += "\n".join(f"Error while converting {filename}: {e}, skipped conversion" for filename, e in errors)
+        return string
     except Exception as e:
         return f"""
         ### Error 😢😢😢
