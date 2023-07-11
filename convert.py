@@ -161,8 +161,11 @@ def check_final_model(model_id: str, folder: str):
     shutil.copy(config, os.path.join(folder, "config.json"))
     config = AutoConfig.from_pretrained(folder)
 
-    _, (pt_model, pt_infos) = infer_framework_load_model(model_id, config, output_loading_info=True)
-    _, (sf_model, sf_infos) = infer_framework_load_model(folder, config, output_loading_info=True)
+    import transformers
+
+    class_ = getattr(transformers, config.architectures[0])
+    (pt_model, pt_infos) = class_.from_pretrained(folder, output_loading_info=True)
+    (sf_model, sf_infos) = class_.from_pretrained(folder, output_loading_info=True)
 
     if pt_infos != sf_infos:
         error_string = create_diff(pt_infos, sf_infos)
@@ -199,7 +202,19 @@ def check_final_model(model_id: str, folder: str):
         sf_model = sf_model.cuda()
         kwargs = {k: v.cuda() for k, v in kwargs.items()}
 
-    pt_logits = pt_model(**kwargs)[0]
+    try:
+        pt_logits = pt_model(**kwargs)[0]
+    except Exception as e:
+        try:
+            # Musicgen special exception.
+            decoder_input_ids = torch.ones((input_ids.shape[0] * pt_model.decoder.num_codebooks, 1), dtype=torch.long)
+            if torch.cuda.is_available():
+                decoder_input_ids = decoder_input_ids.cuda()
+
+            kwargs["decoder_input_ids"] = decoder_input_ids
+            pt_logits = pt_model(**kwargs)[0]
+        except Exception:
+            raise e
     sf_logits = sf_model(**kwargs)[0]
 
     torch.testing.assert_close(sf_logits, pt_logits)
@@ -246,7 +261,7 @@ def convert_generic(model_id: str, folder: str, filenames: Set[str]) -> Conversi
     return operations, errors
 
 
-def convert(api: "HfApi", model_id: str, force: bool = False) -> Tuple["CommitInfo", List["Exception"]]:
+def convert(api: "HfApi", model_id: str, force: bool = False) -> Tuple["CommitInfo", List[Tuple[str, "Exception"]]]:
     pr_title = "Adding `safetensors` variant of this model"
     info = api.model_info(model_id)
     filenames = set(s.rfilename for s in info.siblings)
@@ -328,6 +343,26 @@ if __name__ == "__main__":
             " Continue [Y/n] ?"
         )
     if txt.lower() in {"", "y"}:
-        _commit_info, _errors = convert(api, model_id, force=args.force)
+        try:
+            commit_info, errors = convert(api, model_id, force=args.force)
+            string = f"""
+### Success 🔥
+Yay! This model was successfully converted and a PR was open using your token, here:
+[{commit_info.pr_url}]({commit_info.pr_url})
+            """
+            if errors:
+                string += "\nErrors during conversion:\n"
+                string += "\n".join(
+                    f"Error while converting {filename}: {e}, skipped conversion" for filename, e in errors
+                )
+            print(string)
+        except Exception as e:
+            print(
+                f"""
+### Error 😢😢😢
+
+{e}
+            """
+            )
     else:
         print(f"Answer was `{txt}` aborting.")
