@@ -71,7 +71,7 @@ def rename(pt_filename: str) -> str:
     return local
 
 
-def convert_multi(model_id: str, folder: str, token: str) -> ConversionResult:
+def convert_multi(model_id: str, folder: str, token: Optional[str]) -> ConversionResult:
     filename = hf_hub_download(repo_id=model_id, filename="pytorch_model.bin.index.json", token=token)
     with open(filename, "r") as f:
         data = json.load(f)
@@ -79,7 +79,7 @@ def convert_multi(model_id: str, folder: str, token: str) -> ConversionResult:
     filenames = set(data["weight_map"].values())
     local_filenames = []
     for filename in filenames:
-        pt_filename = hf_hub_download(repo_id=model_id, filename=filename)
+        pt_filename = hf_hub_download(repo_id=model_id, filename=filename, token=token)
 
         sf_filename = rename(pt_filename)
         sf_filename = os.path.join(folder, sf_filename)
@@ -102,7 +102,7 @@ def convert_multi(model_id: str, folder: str, token: str) -> ConversionResult:
     return operations, errors
 
 
-def convert_single(model_id: str, folder: str, token: str) -> ConversionResult:
+def convert_single(model_id: str, folder: str, token: Optional[str]) -> ConversionResult:
     pt_filename = hf_hub_download(repo_id=model_id, filename="pytorch_model.bin", token=token)
 
     sf_name = "model.safetensors"
@@ -156,8 +156,8 @@ def create_diff(pt_infos: Dict[str, List[str]], sf_infos: Dict[str, List[str]]) 
     return "\n".join(errors)
 
 
-def check_final_model(model_id: str, folder: str):
-    config = hf_hub_download(repo_id=model_id, filename="config.json")
+def check_final_model(model_id: str, folder: str, token: Optional[str]):
+    config = hf_hub_download(repo_id=model_id, filename="config.json", token=token)
     shutil.copy(config, os.path.join(folder, "config.json"))
     config = AutoConfig.from_pretrained(folder)
 
@@ -236,7 +236,7 @@ def previous_pr(api: "HfApi", model_id: str, pr_title: str) -> Optional["Discuss
     return None
 
 
-def convert_generic(model_id: str, folder: str, filenames: Set[str], token: str) -> ConversionResult:
+def convert_generic(model_id: str, folder: str, filenames: Set[str], token: Optional[str]) -> ConversionResult:
     operations = []
     errors = []
 
@@ -288,7 +288,7 @@ def convert(api: "HfApi", model_id: str, force: bool = False) -> Tuple["CommitIn
                     operations, errors = convert_multi(model_id, folder, token=api.token)
                 else:
                     raise RuntimeError(f"Model {model_id} doesn't seem to be a valid pytorch model. Cannot convert")
-                check_final_model(model_id, folder)
+                check_final_model(model_id, folder, token=api.token)
             else:
                 operations, errors = convert_generic(model_id, folder, filenames, token=api.token)
 
