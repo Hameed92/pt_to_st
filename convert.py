@@ -71,8 +71,8 @@ def rename(pt_filename: str) -> str:
     return local
 
 
-def convert_multi(model_id: str, folder: str) -> ConversionResult:
-    filename = hf_hub_download(repo_id=model_id, filename="pytorch_model.bin.index.json")
+def convert_multi(model_id: str, folder: str, token: str) -> ConversionResult:
+    filename = hf_hub_download(repo_id=model_id, filename="pytorch_model.bin.index.json", token=token)
     with open(filename, "r") as f:
         data = json.load(f)
 
@@ -102,8 +102,8 @@ def convert_multi(model_id: str, folder: str) -> ConversionResult:
     return operations, errors
 
 
-def convert_single(model_id: str, folder: str) -> ConversionResult:
-    pt_filename = hf_hub_download(repo_id=model_id, filename="pytorch_model.bin")
+def convert_single(model_id: str, folder: str, token: str) -> ConversionResult:
+    pt_filename = hf_hub_download(repo_id=model_id, filename="pytorch_model.bin", token=token)
 
     sf_name = "model.safetensors"
     sf_filename = os.path.join(folder, sf_name)
@@ -236,7 +236,7 @@ def previous_pr(api: "HfApi", model_id: str, pr_title: str) -> Optional["Discuss
     return None
 
 
-def convert_generic(model_id: str, folder: str, filenames: Set[str]) -> ConversionResult:
+def convert_generic(model_id: str, folder: str, filenames: Set[str], token: str) -> ConversionResult:
     operations = []
     errors = []
 
@@ -244,7 +244,7 @@ def convert_generic(model_id: str, folder: str, filenames: Set[str]) -> Conversi
     for filename in filenames:
         prefix, ext = os.path.splitext(filename)
         if ext in extensions:
-            pt_filename = hf_hub_download(model_id, filename=filename)
+            pt_filename = hf_hub_download(model_id, filename=filename, token=token)
             dirname, raw_filename = os.path.split(filename)
             if raw_filename == "pytorch_model.bin":
                 # XXX: This is a special case to handle `transformers` and the
@@ -283,14 +283,14 @@ def convert(api: "HfApi", model_id: str, force: bool = False) -> Tuple["CommitIn
                 raise AlreadyExists(f"Model {model_id} already has an open PR check out {url}")
             elif library_name == "transformers":
                 if "pytorch_model.bin" in filenames:
-                    operations, errors = convert_single(model_id, folder)
+                    operations, errors = convert_single(model_id, folder, token=api.token)
                 elif "pytorch_model.bin.index.json" in filenames:
-                    operations, errors = convert_multi(model_id, folder)
+                    operations, errors = convert_multi(model_id, folder, token=api.token)
                 else:
                     raise RuntimeError(f"Model {model_id} doesn't seem to be a valid pytorch model. Cannot convert")
                 check_final_model(model_id, folder)
             else:
-                operations, errors = convert_generic(model_id, folder, filenames)
+                operations, errors = convert_generic(model_id, folder, filenames, token=api.token)
 
             if operations:
                 new_pr = api.create_commit(
