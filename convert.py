@@ -183,7 +183,6 @@ def check_final_model(model_id: str, folder: str, token: Optional[str]):
     pixel_values = torch.randn(1, 3, 224, 224)
     input_values = torch.arange(1000).float().unsqueeze(0)
     kwargs = {}
-    import ipdb;ipdb.set_trace()
     if "input_ids" in sig.parameters:
         kwargs["input_ids"] = input_ids
     if "decoder_input_ids" in sig.parameters:
