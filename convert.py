@@ -182,9 +182,13 @@ def check_final_model(model_id: str, folder: str, token: Optional[str]):
     input_ids = torch.arange(10).unsqueeze(0)
     pixel_values = torch.randn(1, 3, 224, 224)
     input_values = torch.arange(1000).float().unsqueeze(0)
+    # Hardcoded for whisper basically
+    input_features = torch.zeros((1, 80, 3000))
     kwargs = {}
     if "input_ids" in sig.parameters:
         kwargs["input_ids"] = input_ids
+    if "input_features" in sig.parameters:
+        kwargs["input_features"] = input_features
     if "decoder_input_ids" in sig.parameters:
         kwargs["decoder_input_ids"] = input_ids
     if "pixel_values" in sig.parameters:
@@ -213,8 +217,7 @@ def check_final_model(model_id: str, folder: str, token: Optional[str]):
             kwargs["decoder_input_ids"] = decoder_input_ids
             pt_logits = pt_model(**kwargs)[0]
         except Exception:
-            print(f"Model {model_id} could not be checked, ignoring {e}")
-            return 
+            raise e
     sf_logits = sf_model(**kwargs)[0]
 
     torch.testing.assert_close(sf_logits, pt_logits)
