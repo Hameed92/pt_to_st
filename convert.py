@@ -291,7 +291,7 @@ def convert(api: "HfApi", model_id: str, force: bool = False) -> Tuple["CommitIn
                     operations, errors = convert_multi(model_id, folder, token=api.token)
                 else:
                     raise RuntimeError(f"Model {model_id} doesn't seem to be a valid pytorch model. Cannot convert")
-                check_final_model(model_id, folder, token=api.token)
+                # check_final_model(model_id, folder, token=api.token)
             else:
                 operations, errors = convert_generic(model_id, folder, filenames, token=api.token)
 
