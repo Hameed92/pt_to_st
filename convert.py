@@ -163,13 +163,17 @@ def check_final_model(model_id: str, folder: str, token: Optional[str]):
     import transformers
 
     class_ = getattr(transformers, config.architectures[0])
-    (pt_model, pt_infos) = class_.from_pretrained(folder, output_loading_info=True)
-    (sf_model, sf_infos) = class_.from_pretrained(folder, output_loading_info=True)
+    with torch.device("meta"):
+        (pt_model, pt_infos) = class_.from_pretrained(folder, output_loading_info=True)
+        (sf_model, sf_infos) = class_.from_pretrained(folder, output_loading_info=True)
+    
+        if pt_infos != sf_infos:
+            error_string = create_diff(pt_infos, sf_infos)
+            raise ValueError(f"Different infos when reloading the model: {error_string}")
 
-    if pt_infos != sf_infos:
-        error_string = create_diff(pt_infos, sf_infos)
-        raise ValueError(f"Different infos when reloading the model: {error_string}")
-
+    #### XXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+    ####  SKIPPING THE REST OF THE test to save RAM
+    return
     pt_params = pt_model.state_dict()
     sf_params = sf_model.state_dict()
 
@@ -291,7 +295,7 @@ def convert(api: "HfApi", model_id: str, force: bool = False) -> Tuple["CommitIn
                     operations, errors = convert_multi(model_id, folder, token=api.token)
                 else:
                     raise RuntimeError(f"Model {model_id} doesn't seem to be a valid pytorch model. Cannot convert")
-                # check_final_model(model_id, folder, token=api.token)
+                check_final_model(model_id, folder, token=api.token)
             else:
                 operations, errors = convert_generic(model_id, folder, filenames, token=api.token)
 
