@@ -260,7 +260,7 @@ def convert(api: "HfApi", model_id: str, revision: Optional[str] = None, force: 
     info = api.model_info(model_id, revision=revision)
     filenames = set(s.rfilename for s in info.siblings)
 
-    with TemporaryDirectory(prefix=os.getenv("HF_HOME", "") + "/") as d:
+    with TemporaryDirectory() as d:
         folder = os.path.join(d, repo_folder_name(repo_id=model_id, repo_type="models"))
         os.makedirs(folder)
         new_pr = None
