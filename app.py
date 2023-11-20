@@ -20,39 +20,29 @@ if False and HF_TOKEN:
     repo = Repository(local_dir="data", clone_from=DATASET_REPO_URL, token=HF_TOKEN)
 
 
-def run(token: str, model_id: str) -> str:
-    if token == "" or model_id == "":
+def run(model_id: str, is_private: bool, token: Optional[str] = None) -> str:
+    if model_id == "":
         return """
         ### Invalid input 🐞
         
         Please fill a token and model_id.
         """
     try:
-        api = HfApi(token=token)
-        is_private = api.model_info(repo_id=model_id).private
+        if is_private:
+            api = HfApi(token=token)
+        else:
+            api = HfApi(token=HF_TOKEN)
+        hf_is_private = api.model_info(repo_id=model_id).private
+        if is_private and not hf_is_private:
+            # This model is NOT private
+            # Change the token so we make the PR on behalf of the bot.
+            api = HfApi(token=HF_TOKEN)
+
         print("is_private", is_private)
 
         commit_info, errors = convert(api=api, model_id=model_id)
         print("[commit_info]", commit_info)
 
-        # save in a (public) dataset:
-        # TODO False because of LFS bug.
-        if False and repo is not None and not is_private:
-            repo.git_pull(rebase=True)
-            print("pulled")
-            with open(DATA_FILE, "a") as csvfile:
-                writer = csv.DictWriter(
-                    csvfile, fieldnames=["model_id", "pr_url", "time"]
-                )
-                writer.writerow(
-                    {
-                        "model_id": model_id,
-                        "pr_url": commit_info.pr_url,
-                        "time": str(datetime.now()),
-                    }
-                )
-            commit_url = repo.push_to_hub()
-            print("[dataset]", commit_url)
 
         string =  f"""
         ### Success 🔥
@@ -84,17 +74,29 @@ The steps are the following:
 ⚠️ For now only `pytorch_model.bin` files are supported but we'll extend in the future.
 """
 
-demo = gr.Interface(
-    title="Convert any model to Safetensors and open a PR",
-    description=DESCRIPTION,
-    allow_flagging="never",
-    article="Check out the [Safetensors repo on GitHub](https://github.com/huggingface/safetensors)",
-    inputs=[
-        gr.Text(max_lines=1, label="your_hf_token"),
-        gr.Text(max_lines=1, label="model_id"),
-    ],
-    outputs=[gr.Markdown(label="output")],
-    fn=run,
-).queue(max_size=10, concurrency_count=1)
+title="Convert any model to Safetensors and open a PR"
+allow_flagging="never"
 
-demo.launch(show_api=True)
+def token_text(visible=False):
+    return gr.Text(max_lines=1, label="your_hf_token", visible=visible)
+
+with gr.Blocks(title=title) as demo:
+    description = gr.Markdown(f"""# {title}""")
+    description = gr.Markdown(DESCRIPTION)
+
+    with gr.Row() as r:
+        with gr.Column() as c:
+            model_id = gr.Text(max_lines=1, label="model_id")
+            is_private = gr.Checkbox(label="Private model")
+            token = token_text()
+            with gr.Row() as c:
+                clean = gr.ClearButton()
+                submit = gr.Button("Submit", variant="primary")
+
+        with gr.Column() as d:
+            output = gr.Markdown()
+
+    is_private.change(lambda s: token_text(s), inputs=is_private, outputs=token)
+    submit.click(run, inputs=[model_id, is_private, token], outputs=output, concurrency_limit=1)
+
+demo.queue(max_size=10).launch(show_api=True)
